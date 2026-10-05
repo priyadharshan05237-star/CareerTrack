@@ -1,0 +1,379 @@
+.preparation-page {
+  min-height: 100vh;
+  padding: 30px;
+  background: #f5f7fb;
+  color: #1f2937;
+}
+
+/* TOP BAR */
+
+.preparation-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.preparation-topbar button {
+  border: none;
+  background: white;
+  color: #374151;
+  padding: 11px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+}
+
+.preparation-topbar button:hover {
+  background: #eef2ff;
+}
+
+/* HEADER */
+
+.preparation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 25px;
+  margin-bottom: 25px;
+}
+
+.preparation-header h1 {
+  margin: 0 0 8px;
+  font-size: 32px;
+}
+
+.preparation-header p {
+  margin: 0;
+  color: #6b7280;
+}
+
+/* OVERALL PROGRESS */
+
+.overall-progress {
+  background: white;
+  padding: 22px;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 25px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+}
+
+.overall-progress h2 {
+  margin: 0 0 15px;
+  font-size: 19px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 10px;
+  background: #e5e7eb;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #4f46e5;
+  border-radius: 20px;
+  transition: width 0.3s ease;
+}
+
+/* STATS */
+
+.preparation-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.prep-stat-card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  text-align: center;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+}
+
+.prep-stat-card strong {
+  display: block;
+  font-size: 27px;
+  color: #4f46e5;
+  margin-bottom: 5px;
+}
+
+.prep-stat-card span {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+/* PREPARATION LIST */
+
+.preparation-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.preparation-card {
+  background: white;
+  padding: 22px;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.preparation-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.09);
+}
+
+.preparation-card h2 {
+  margin: 0 0 8px;
+  font-size: 19px;
+}
+
+.preparation-card p {
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* QUIZ CONTENT */
+
+.preparation-content {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* PRACTICE HEADER */
+
+.practice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.practice-header h1,
+.practice-header h2 {
+  margin: 0;
+}
+
+.practice-header button {
+  border: none;
+  background: #e5e7eb;
+  color: #374151;
+  padding: 10px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* QUESTION PROGRESS */
+
+.question-progress {
+  background: white;
+  padding: 18px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  border: 1px solid #e5e7eb;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+/* QUESTION CARD */
+
+.question-card {
+  background: white;
+  padding: 30px;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+}
+
+.question-card h2 {
+  margin: 0 0 25px;
+  font-size: 20px;
+  line-height: 1.5;
+}
+
+/* ANSWERS */
+
+.answer-options {
+  display: grid;
+  gap: 12px;
+}
+
+.answer-option {
+  width: 100%;
+  text-align: left;
+  padding: 15px 17px;
+  border: 1px solid #d1d5db;
+  background: white;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.2s ease;
+}
+
+.answer-option:hover {
+  border-color: #4f46e5;
+  background: #f8f7ff;
+}
+
+.answer-option.selected-answer {
+  border-color: #4f46e5;
+  background: #eef2ff;
+  color: #3730a3;
+  font-weight: 600;
+}
+
+.answer-option.correct-answer {
+  border-color: #16a34a;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.answer-option.wrong-answer {
+  border-color: #dc2626;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* FEEDBACK */
+
+.answer-feedback {
+  margin-top: 20px;
+  padding: 16px;
+  border-radius: 10px;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+.correct-feedback {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.wrong-feedback {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* QUESTION ACTIONS */
+
+.question-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 25px;
+}
+
+.question-actions button {
+  border: none;
+  padding: 11px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.question-actions button:first-child {
+  background: #4f46e5;
+  color: white;
+}
+
+.question-actions button:last-child {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+/* RESULT */
+
+.practice-result {
+  max-width: 700px;
+  margin: 30px auto;
+  background: white;
+  padding: 35px;
+  border-radius: 16px;
+  text-align: center;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+}
+
+.practice-result h1 {
+  margin-bottom: 10px;
+}
+
+.practice-result h2 {
+  font-size: 40px;
+  color: #4f46e5;
+  margin: 20px 0;
+}
+
+.practice-result button {
+  border: none;
+  background: #4f46e5;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 1000px) {
+  .preparation-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .preparation-page {
+    padding: 18px;
+  }
+
+  .preparation-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .preparation-list {
+    grid-template-columns: 1fr;
+  }
+
+  .preparation-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .practice-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .question-card {
+    padding: 20px;
+  }
+
+  .question-actions {
+    flex-direction: column;
+  }
+
+  .question-actions button {
+    width: 100%;
+  }
+}
