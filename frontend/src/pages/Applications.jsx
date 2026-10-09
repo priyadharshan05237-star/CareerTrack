@@ -1,951 +1,648 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import "./Applications.css";
 
-function Applications({
-  goDashboard,
-  applications,
-  setApplications,
-  selectedCompany,
-  setSelectedCompany
-}) {
+const API_URL = "http://127.0.0.1:5000/api/applications";
+
+const STATUSES = [
+  "Applied",
+  "Shortlisted",
+  "Interview",
+  "Selected",
+  "Rejected",
+];
+
+const EMPTY_FORM = {
+  company: "",
+  role: "",
+  location: "",
+  appliedDate: "",
+  status: "Applied",
+  notes: "",
+};
+
+function Applications({ selectedCompany, goDashboard }) {
+  const [applications, setApplications] = useState([]);
+  const [form, setForm] = useState(EMPTY_FORM);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("All");
-  const [showForm, setShowForm] = useState(false);
-  const [selectedApplication, setSelectedApplication] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  const [newApplication, setNewApplication] = useState({
-    company: "",
-    role: "",
-    package: "",
-    status: "Applied",
-    round: "Application Submitted",
-    appliedDate: ""
-  });
+  const token = localStorage.getItem("careerTrackToken");
+  const userId = localStorage.getItem("careerTrackUserId");
 
-  // LOAD APPLICATIONS FROM MONGODB
-
-  useEffect(() => {
-    const fetchApplications = async () => {
-      try {
-        const userId =
-          localStorage.getItem("careerTrackUserId");
-
-        if (!userId) {
-          console.error("User ID not found");
-          setLoading(false);
-          return;
-        }
-
-        const response = await fetch(
-          `http://127.0.0.1:5000/api/applications/${userId}`
-        );
-
-        if (!response.ok) {
-          throw new Error(
-            "Failed to fetch applications"
-          );
-        }
-
-        const data = await response.json();
-
-        const formattedApplications = data.map(
-          (application) => ({
-            ...application,
-            id: application._id
-          })
-        );
-
-        setApplications(formattedApplications);
-      } catch (error) {
-        console.error(
-          "Failed to load applications:",
-          error
-        );
-
-        alert(
-          "Failed to load applications from server."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchApplications();
-  }, [setApplications]);
-
-  // COMPANY → APPLICATION
-
-  useEffect(() => {
-    if (selectedCompany) {
-      setNewApplication({
-        company: selectedCompany.name || "",
-        role: selectedCompany.role || "",
-        package: selectedCompany.package || "",
-        status: "Applied",
-        round: "Application Submitted",
-        appliedDate: new Date()
-          .toISOString()
-          .split("T")[0]
-      });
-
-      setShowForm(true);
-      setSelectedCompany(null);
-    }
-  }, [
-    selectedCompany,
-    setSelectedCompany
-  ]);
-  // SEARCH + FILTER
-
-  const filteredApplications = applications.filter(
-    (application) => {
-      const searchText = search.toLowerCase();
-
-      const matchesSearch =
-        (application.company || "")
-          .toLowerCase()
-          .includes(searchText) ||
-        (application.role || "")
-          .toLowerCase()
-          .includes(searchText);
-
-      const matchesFilter =
-        filter === "All" ||
-        application.status === filter;
-
-      return matchesSearch && matchesFilter;
-    }
+  const getHeaders = useCallback(
+    () => ({
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${
+        localStorage.getItem("careerTrackToken") || ""
+      }`,
+    }),
+    []
   );
 
-  // STATISTICS
+  // Fetch applications from backend
+  const fetchApplications = useCallback(async () => {
+    const currentToken = localStorage.getItem("careerTrackToken");
+    const currentUserId = localStorage.getItem("careerTrackUserId");
 
-  const totalApplications =
-    applications.length;
-
-  const appliedCount =
-    applications.filter(
-      (app) => app.status === "Applied"
-    ).length;
-
-  const shortlistedCount =
-    applications.filter(
-      (app) => app.status === "Shortlisted"
-    ).length;
-
-  const interviewCount =
-    applications.filter(
-      (app) => app.status === "Interview"
-    ).length;
-
-  const selectedCount =
-    applications.filter(
-      (app) => app.status === "Selected"
-    ).length;
-
-  const rejectedCount =
-    applications.filter(
-      (app) => app.status === "Rejected"
-    ).length;
-
-  // ADD APPLICATION
-
-  const handleAddApplication = async (e) => {
-    e.preventDefault();
-
-    if (
-      !newApplication.company.trim() ||
-      !newApplication.role.trim()
-    ) {
-      alert(
-        "Please enter company name and job role."
-      );
+    if (!currentToken || !currentUserId) {
+      setError("Your session is missing. Please log in again.");
+      setLoading(false);
       return;
     }
 
     try {
-      const userId =
-        localStorage.getItem(
-          "careerTrackUserId"
-        );
+      setLoading(true);
+      setError("");
 
-      if (!userId) {
-        alert("Please login again.");
+      const response = await fetch(
+        `${API_URL}/${encodeURIComponent(currentUserId)}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${currentToken}`,
+          },
+        }
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (response.status === 401) {
+        setError(
+          data.message || "Your session expired. Please log in again."
+        );
         return;
       }
 
-      const applicationData = {
-        userId: userId,
-        company:
-          newApplication.company.trim(),
-        role:
-          newApplication.role.trim(),
-        package:
-          newApplication.package.trim(),
-        status:
-          newApplication.status,
-        round:
-          newApplication.round,
-        appliedDate:
-          newApplication.appliedDate ||
-          new Date()
-            .toISOString()
-            .split("T")[0]
-      };
-
-      const response = await fetch(
-        "http://127.0.0.1:5000/api/applications",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-          body: JSON.stringify(
-            applicationData
-          )
-        }
-      );
-
-      const data =
-        await response.json();
-
       if (!response.ok) {
         throw new Error(
-          data.message ||
-            "Failed to save application"
+          data.message || "Unable to load applications."
         );
       }
 
-      const savedApplication = {
-        ...data.application,
-        id: data.application._id
-      };
+      setApplications(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Fetch applications error:", err);
 
-      setApplications(
-        (previous) => [
-          ...previous,
-          savedApplication
-        ]
+      setError(
+        err.message ||
+          "Cannot connect to the backend. Check whether the server is running."
       );
-
-      setNewApplication({
-        company: "",
-        role: "",
-        package: "",
-        status: "Applied",
-        round:
-          "Application Submitted",
-        appliedDate: ""
-      });
-
-      setShowForm(false);
-
-      alert(
-        "Application saved successfully!"
-      );
-
-    } catch (error) {
-      console.error(
-        "Add application error:",
-        error
-      );
-
-      alert(
-        "Failed to save application."
-      );
+    } finally {
+      setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    fetchApplications();
+  }, [fetchApplications]);
+
+  // Receive company details from Companies page
+  useEffect(() => {
+    if (!selectedCompany) return;
+
+    setForm({
+      ...EMPTY_FORM,
+      company: selectedCompany.name || "",
+      role: selectedCompany.role || "",
+      location: selectedCompany.location || "",
+      appliedDate: new Date().toLocaleDateString("en-CA"),
+      status: "Applied",
+      notes: "",
+    });
+
+    setError("");
+  }, [selectedCompany]);
+
+  // Handle form changes
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+
+    setForm((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
   };
-  // DELETE APPLICATION
 
-  const handleDeleteApplication = async (id) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this application?"
-    );
+  // Add application to database
+  const handleAddApplication = async (event) => {
+    event.preventDefault();
 
-    if (!confirmDelete) {
+    const currentToken = localStorage.getItem("careerTrackToken");
+    const currentUserId = localStorage.getItem("careerTrackUserId");
+
+    if (!currentToken || !currentUserId) {
+      setError("Please log in again before adding an application.");
+      return;
+    }
+
+    if (!form.company.trim()) {
+      setError("Please enter the company name.");
       return;
     }
 
     try {
-      const response = await fetch(
-        `http://127.0.0.1:5000/api/applications/${id}`,
-        {
-          method: "DELETE"
-        }
-      );
+      setSubmitting(true);
+      setError("");
 
-      const data = await response.json();
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({
+          ...form,
+          company: form.company.trim(),
+          role: form.role.trim(),
+          location: form.location.trim(),
+          notes: form.notes.trim(),
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         throw new Error(
-          data.message ||
-            "Failed to delete application"
+          data.message || "Failed to add application."
         );
       }
 
-      setApplications(
-        (previous) =>
-          previous.filter(
-            (application) =>
-              application.id !== id
-          )
-      );
+      const newApplication = data.application || data;
 
-      setSelectedApplication(null);
+      if (!newApplication?._id) {
+        await fetchApplications();
+      } else {
+        setApplications((previous) => [
+          newApplication,
+          ...previous,
+        ]);
+      }
 
-      alert(
-        "Application deleted successfully!"
-      );
-
-    } catch (error) {
-      console.error(
-        "Delete application error:",
-        error
-      );
-
-      alert(
-        "Failed to delete application."
-      );
+      setForm(EMPTY_FORM);
+    } catch (err) {
+      console.error("Add application error:", err);
+      setError(err.message || "Unable to add application.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
-
-  // UPDATE APPLICATION STATUS
-
-  const handleUpdateStatus = async (
-    id,
-    newStatus
-  ) => {
+  // Update application status
+  const handleStatusChange = async (applicationId, newStatus) => {
     try {
-      const response = await fetch(
-        `http://127.0.0.1:5000/api/applications/${id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-          body: JSON.stringify({
-            status: newStatus
-          })
-        }
-      );
+      setError("");
 
-      const data =
-        await response.json();
+      const response = await fetch(`${API_URL}/${applicationId}`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         throw new Error(
-          data.message ||
-            "Failed to update status"
+          data.message || "Failed to update application status."
         );
       }
 
-      setApplications(
-        (previous) =>
-          previous.map(
-            (application) =>
-              application.id === id
-                ? {
-                    ...application,
-                    status:
-                      data.application.status
-                  }
-                : application
-          )
-      );
+      const updatedApplication = data.application || data;
 
-      setSelectedApplication(
-        (previous) =>
-          previous &&
-          previous.id === id
+      setApplications((previous) =>
+        previous.map((application) =>
+          application._id === applicationId
             ? {
-                ...previous,
-                status:
-                  data.application.status
+                ...application,
+                ...updatedApplication,
+                status: newStatus,
               }
-            : previous
+            : application
+        )
       );
-
-    } catch (error) {
-      console.error(
-        "Update status error:",
-        error
-      );
-
-      alert(
-        "Failed to update application status."
-      );
+    } catch (err) {
+      console.error("Update application error:", err);
+      setError(err.message || "Unable to update status.");
+      await fetchApplications();
     }
   };
 
+  // Delete application
+  const handleDeleteApplication = async (applicationId) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this application?"
+    );
 
-  // STATUS CLASS
+    if (!confirmed) return;
 
-  const getStatusClass = (status) => {
-    switch (status) {
-      case "Applied":
-        return "status-applied";
+    try {
+      setError("");
 
-      case "Shortlisted":
-        return "status-shortlisted";
+      const response = await fetch(`${API_URL}/${applicationId}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
 
-      case "Interview":
-        return "status-interview";
+      const data = await response.json().catch(() => ({}));
 
-      case "Selected":
-        return "status-selected";
+      if (!response.ok) {
+        throw new Error(
+          data.message || "Failed to delete application."
+        );
+      }
 
-      case "Rejected":
-        return "status-rejected";
-
-      default:
-        return "";
+      setApplications((previous) =>
+        previous.filter(
+          (application) => application._id !== applicationId
+        )
+      );
+    } catch (err) {
+      console.error("Delete application error:", err);
+      setError(err.message || "Unable to delete application.");
     }
   };
+
+  // Search applications
+  const filteredApplications = applications.filter((application) => {
+    const query = search.trim().toLowerCase();
+
+    return [
+      application.company,
+      application.role,
+      application.location,
+      application.status,
+    ].some((value) =>
+      value?.toLowerCase().includes(query)
+    );
+  });
+
+  const countStatus = (status) =>
+    applications.filter(
+      (application) => application.status === status
+    ).length;
+
+  const formatDate = (date) => {
+    if (!date) return "Not specified";
+
+    const parsedDate = new Date(date);
+
+    if (Number.isNaN(parsedDate.getTime())) return date;
+
+    return parsedDate.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const goToDashboard = () => {
+    if (goDashboard) {
+      goDashboard();
+    }
+  };
+
+  if (loading) {
+    return (
+      <main className="applications-page">
+        <div className="applications-loading">
+          <div className="applications-spinner" />
+          <h2>Loading your applications...</h2>
+          <p>Please wait a moment.</p>
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <div className="applications-page">
-
-      {/* TOP BAR */}
-
-      <div className="applications-topbar">
-
+    <main className="applications-page">
+      <div className="applications-container">
         <button
-          className="back-btn"
-          onClick={goDashboard}
+          type="button"
+          className="back-dashboard-btn"
+          onClick={goToDashboard}
         >
-          ← Dashboard
+          <span aria-hidden="true">←</span> Back to Dashboard
         </button>
 
-        <button
-          className="add-application-btn"
-          onClick={() => setShowForm(true)}
-        >
-          + Add Application
-        </button>
+        <header className="applications-hero">
+          <div>
+            <span className="applications-eyebrow">
+              CAREERTRACK · CAREER HUB
+            </span>
 
-      </div>
+            <h1>My Applications</h1>
 
+            <p>
+              Track your job applications and stay on top of your career goals.
+            </p>
+          </div>
 
-      {/* HEADING */}
+          <div className="hero-icon" aria-hidden="true">
+            📋
+          </div>
+        </header>
 
-      <div className="applications-heading">
-        <div>
-          <h1>My Applications</h1>
-          <p>
-            Track and manage your placement
-            applications.
-          </p>
-        </div>
+        {error && (
+          <div className="applications-alert" role="alert">
+            <span>{error}</span>
 
-        <div className="application-total">
-          {totalApplications} Applications
-        </div>
-      </div>
+            <div className="alert-actions">
+              <button type="button" onClick={fetchApplications}>
+                Retry
+              </button>
 
-
-      {/* STATISTICS */}
-
-      <div className="application-stats">
-
-        <div className="application-stat-card">
-          <h3>{totalApplications}</h3>
-          <p>Total</p>
-        </div>
-
-        <div className="application-stat-card">
-          <h3>{appliedCount}</h3>
-          <p>Applied</p>
-        </div>
-
-        <div className="application-stat-card">
-          <h3>{shortlistedCount}</h3>
-          <p>Shortlisted</p>
-        </div>
-
-        <div className="application-stat-card">
-          <h3>{interviewCount}</h3>
-          <p>Interview</p>
-        </div>
-
-        <div className="application-stat-card">
-          <h3>{selectedCount}</h3>
-          <p>Selected</p>
-        </div>
-
-        <div className="application-stat-card">
-          <h3>{rejectedCount}</h3>
-          <p>Rejected</p>
-        </div>
-
-      </div>
-
-
-      {/* SEARCH + FILTER */}
-
-      <div className="application-search">
-
-        <input
-          type="text"
-          placeholder="Search company or role..."
-          value={search}
-          onChange={(e) =>
-            setSearch(e.target.value)
-          }
-        />
-
-        <select
-          value={filter}
-          onChange={(e) =>
-            setFilter(e.target.value)
-          }
-        >
-          <option value="All">All Status</option>
-          <option value="Applied">Applied</option>
-          <option value="Shortlisted">
-            Shortlisted
-          </option>
-          <option value="Interview">
-            Interview
-          </option>
-          <option value="Selected">
-            Selected
-          </option>
-          <option value="Rejected">
-            Rejected
-          </option>
-        </select>
-
-        {(search || filter !== "All") && (
-          <button
-            className="clear-application-filter"
-            onClick={() => {
-              setSearch("");
-              setFilter("All");
-            }}
-          >
-            Clear
-          </button>
+              {(!token || !userId) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.location.href = "/login";
+                  }}
+                >
+                  Go to Login
+                </button>
+              )}
+            </div>
+          </div>
         )}
 
-      </div>
+        <section
+          className="application-stats"
+          aria-label="Application statistics"
+        >
+          <div className="stat-card stat-total">
+            <span className="stat-icon">📁</span>
+            <p>Total Applications</p>
+            <strong>{applications.length}</strong>
+          </div>
 
+          <div className="stat-card">
+            <span className="stat-icon">📨</span>
+            <p>Applied</p>
+            <strong>{countStatus("Applied")}</strong>
+          </div>
 
-      {/* APPLICATION LIST */}
+          <div className="stat-card">
+            <span className="stat-icon">⭐</span>
+            <p>Shortlisted</p>
+            <strong>{countStatus("Shortlisted")}</strong>
+          </div>
 
-      {loading ? (
-        <div className="no-application">
-          Loading applications...
-        </div>
-      ) : filteredApplications.length === 0 ? (
-        <div className="no-application">
-          <h3>No applications found</h3>
-          <p>
-            Add your first placement application
-            to start tracking.
-          </p>
-        </div>
-      ) : (
+          <div className="stat-card">
+            <span className="stat-icon">🎤</span>
+            <p>Interviews</p>
+            <strong>{countStatus("Interview")}</strong>
+          </div>
 
-        <div className="application-list">
+          <div className="stat-card">
+            <span className="stat-icon">🎉</span>
+            <p>Selected</p>
+            <strong>{countStatus("Selected")}</strong>
+          </div>
 
-          {filteredApplications.map(
-            (application) => (
+          <div className="stat-card">
+            <span className="stat-icon">↩️</span>
+            <p>Rejected</p>
+            <strong>{countStatus("Rejected")}</strong>
+          </div>
+        </section>
+        <section className="application-panel">
+          <div className="panel-heading">
+            <div>
+              <span className="section-label">NEW ENTRY</span>
+              <h2>Add Application</h2>
+              <p>Record the details of a job you applied for.</p>
+            </div>
 
-              <div
-                className="application-card"
-                key={application.id}
-              >
+            <span className="panel-heading-icon" aria-hidden="true">
+              ＋
+            </span>
+          </div>
 
-                <div className="application-card-header">
-
-                  <div className="application-company-icon">
-                    🏢
-                  </div>
-
-                  <div className="application-info">
-
-                    <h3>
-                      {application.company}
-                    </h3>
-
-                    <p>
-                      {application.role}
-                    </p>
-
-                  </div>
-
-                  <span
-                    className={`application-status ${getStatusClass(
-                      application.status
-                    )}`}
-                  >
-                    {application.status}
-                  </span>
-
-                </div>
-
-
-                <div className="application-card-bottom">
-
-                  <div>
-                    <small>Package</small>
-                    <p>
-                      {application.package ||
-                        "Not specified"}
-                    </p>
-                  </div>
-
-                  <div>
-                    <small>Applied Date</small>
-                    <p>
-                      {application.appliedDate ||
-                        "Not specified"}
-                    </p>
-                  </div>
-
-                  <button
-                    className="view-details-btn"
-                    onClick={() =>
-                      setSelectedApplication(
-                        application
-                      )
-                    }
-                  >
-                    View Details
-                  </button>
-
-                </div>
-
-              </div>
-
-            )
-          )}
-
-        </div>
-
-      )}
-      {/* ADD APPLICATION FORM */}
-
-      {showForm && (
-        <div className="application-modal-overlay">
-
-          <div className="application-form">
-
-            <button
-              className="close-form-btn"
-              onClick={() => setShowForm(false)}
-            >
-              ×
-            </button>
-
-            <h2>Add Application</h2>
-
-            <form onSubmit={handleAddApplication}>
-
-              <label>Company Name</label>
-
+          <form
+            className="application-form"
+            onSubmit={handleAddApplication}
+          >
+            <label>
+              Company Name <span className="required">*</span>
               <input
-                type="text"
-                value={newApplication.company}
-                onChange={(e) =>
-                  setNewApplication({
-                    ...newApplication,
-                    company: e.target.value
-                  })
-                }
-                placeholder="Enter company name"
+                name="company"
+                value={form.company}
+                onChange={handleChange}
+                placeholder="e.g. TCS, Zoho, Infosys"
+                required
               />
+            </label>
 
-
-              <label>Job Role</label>
-
+            <label>
+              Job Role
               <input
-                type="text"
-                value={newApplication.role}
-                onChange={(e) =>
-                  setNewApplication({
-                    ...newApplication,
-                    role: e.target.value
-                  })
-                }
-                placeholder="Enter job role"
+                name="role"
+                value={form.role}
+                onChange={handleChange}
+                placeholder="e.g. Software Developer"
               />
+            </label>
 
-
-              <label>Package</label>
-
+            <label>
+              Location
               <input
-                type="text"
-                value={newApplication.package}
-                onChange={(e) =>
-                  setNewApplication({
-                    ...newApplication,
-                    package: e.target.value
-                  })
-                }
-                placeholder="Example: 6 LPA"
+                name="location"
+                value={form.location}
+                onChange={handleChange}
+                placeholder="e.g. Chennai / Remote"
               />
+            </label>
 
-
-              <label>Status</label>
-
-              <select
-                value={newApplication.status}
-                onChange={(e) =>
-                  setNewApplication({
-                    ...newApplication,
-                    status: e.target.value
-                  })
-                }
-              >
-                <option value="Applied">
-                  Applied
-                </option>
-
-                <option value="Shortlisted">
-                  Shortlisted
-                </option>
-
-                <option value="Interview">
-                  Interview
-                </option>
-
-                <option value="Selected">
-                  Selected
-                </option>
-
-                <option value="Rejected">
-                  Rejected
-                </option>
-              </select>
-
-
-              <label>Application Round</label>
-
-              <input
-                type="text"
-                value={newApplication.round}
-                onChange={(e) =>
-                  setNewApplication({
-                    ...newApplication,
-                    round: e.target.value
-                  })
-                }
-                placeholder="Example: Aptitude Round"
-              />
-
-
-              <label>Applied Date</label>
-
+            <label>
+              Applied Date
               <input
                 type="date"
-                value={newApplication.appliedDate}
-                onChange={(e) =>
-                  setNewApplication({
-                    ...newApplication,
-                    appliedDate: e.target.value
-                  })
-                }
+                name="appliedDate"
+                value={form.appliedDate}
+                onChange={handleChange}
               />
+            </label>
 
+            <label>
+              Application Status
+              <select
+                name="status"
+                value={form.status}
+                onChange={handleChange}
+              >
+                {STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+            </label>
 
+            <label className="notes-field">
+              Notes
+              <input
+                name="notes"
+                value={form.notes}
+                onChange={handleChange}
+                placeholder="Recruiter details, next steps, etc."
+              />
+            </label>
+
+            <div className="form-actions">
               <button
+                className="primary-btn"
                 type="submit"
-                className="save-application-btn"
+                disabled={submitting}
               >
-                Save Application
-              </button>
-
-            </form>
-
-          </div>
-
-        </div>
-      )}
-      {/* APPLICATION DETAILS */}
-
-      {selectedApplication && (
-        <div className="application-modal-overlay">
-
-          <div className="application-details">
-
-            <button
-              className="close-details-btn-top"
-              onClick={() =>
-                setSelectedApplication(null)
-              }
-            >
-              ×
-            </button>
-
-            <div className="details-company">
-
-              <div className="details-company-icon">
-                🏢
-              </div>
-
-              <div>
-                <h2>
-                  {selectedApplication.company}
-                </h2>
-
-                <p>
-                  {selectedApplication.role}
-                </p>
-              </div>
-
-            </div>
-
-
-            {/* DETAILS GRID */}
-
-            <div className="application-detail-grid">
-
-              <div>
-                <span>Package</span>
-                <strong>
-                  {selectedApplication.package ||
-                    "Not specified"}
-                </strong>
-              </div>
-
-              <div>
-                <span>Status</span>
-                <strong
-                  className={`detail-status ${getStatusClass(
-                    selectedApplication.status
-                  )}`}
-                >
-                  {selectedApplication.status}
-                </strong>
-              </div>
-
-              <div>
-                <span>Application Round</span>
-                <strong>
-                  {selectedApplication.round ||
-                    "Application Submitted"}
-                </strong>
-              </div>
-
-              <div>
-                <span>Applied Date</span>
-                <strong>
-                  {selectedApplication.appliedDate ||
-                    "Not specified"}
-                </strong>
-              </div>
-
-            </div>
-
-
-            {/* UPDATE STATUS */}
-
-            <div className="status-update-section">
-
-              <h3>Update Application Status</h3>
-
-              <div className="status-buttons">
-
-                <button
-                  className="status-applied"
-                  onClick={() =>
-                    handleUpdateStatus(
-                      selectedApplication.id,
-                      "Applied"
-                    )
-                  }
-                >
-                  Applied
-                </button>
-
-                <button
-                  className="status-shortlisted"
-                  onClick={() =>
-                    handleUpdateStatus(
-                      selectedApplication.id,
-                      "Shortlisted"
-                    )
-                  }
-                >
-                  Shortlisted
-                </button>
-
-                <button
-                  className="status-interview"
-                  onClick={() =>
-                    handleUpdateStatus(
-                      selectedApplication.id,
-                      "Interview"
-                    )
-                  }
-                >
-                  Interview
-                </button>
-
-                <button
-                  className="status-selected"
-                  onClick={() =>
-                    handleUpdateStatus(
-                      selectedApplication.id,
-                      "Selected"
-                    )
-                  }
-                >
-                  Selected
-                </button>
-
-                <button
-                  className="status-rejected"
-                  onClick={() =>
-                    handleUpdateStatus(
-                      selectedApplication.id,
-                      "Rejected"
-                    )
-                  }
-                >
-                  Rejected
-                </button>
-
-              </div>
-
-            </div>
-
-
-            {/* ACTIONS */}
-
-            <div className="application-detail-actions">
-
-              <button
-                className="delete-application-btn"
-                onClick={() =>
-                  handleDeleteApplication(
-                    selectedApplication.id
-                  )
-                }
-              >
-                Delete Application
+                {submitting ? "Saving..." : "+ Add Application"}
               </button>
 
               <button
-                className="close-application-btn"
-                onClick={() =>
-                  setSelectedApplication(null)
-                }
+                className="secondary-btn"
+                type="button"
+                onClick={() => setForm(EMPTY_FORM)}
               >
-                Close
+                Clear Form
               </button>
+            </div>
+          </form>
+        </section>
 
+        <section className="application-panel history-panel">
+          <div className="panel-heading history-heading">
+            <div>
+              <span className="section-label">YOUR PROGRESS</span>
+              <h2>Application History</h2>
+              <p>Review, search, and update your applications.</p>
             </div>
 
+            <span className="history-count">
+              {filteredApplications.length}{" "}
+              {filteredApplications.length === 1 ? "record" : "records"}
+            </span>
           </div>
 
-        </div>
-      )}
+          <div className="application-search">
+            <span aria-hidden="true">⌕</span>
 
-    </div>
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search company, role, location or status..."
+              aria-label="Search applications"
+            />
+
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          {filteredApplications.length === 0 ? (
+            <div className="applications-empty">
+              <span aria-hidden="true">📂</span>
+
+              <h3>
+                {search
+                  ? "No matching applications"
+                  : "No applications yet"}
+              </h3>
+
+              <p>
+                {search
+                  ? "Try a different company name, role, location or status."
+                  : "Add your first application using the form above."}
+              </p>
+            </div>
+          ) : (
+            <div className="application-list">
+              {filteredApplications.map((application) => (
+                <article
+                  className="application-card"
+                  key={application._id}
+                >
+                  <div className="application-card-main">
+                    <div className="company-avatar" aria-hidden="true">
+                      {(application.company || "C")
+                        .trim()
+                        .charAt(0)
+                        .toUpperCase()}
+                    </div>
+
+                    <div className="application-info">
+                      <h3>{application.company}</h3>
+
+                      <p className="application-role">
+                        {application.role || "Role not specified"}
+                      </p>
+
+                      <div className="application-meta">
+                        <span>
+                          📍{" "}
+                          {application.location ||
+                            "Location not specified"}
+                        </span>
+
+                        <span>
+                          📅 {formatDate(application.appliedDate)}
+                        </span>
+                      </div>
+
+                      {application.notes && (
+                        <p className="application-notes">
+                          <strong>Notes:</strong> {application.notes}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="application-card-actions">
+                    <label>
+                      <span>Status</span>
+
+                      <select
+                        value={application.status || "Applied"}
+                        onChange={(event) =>
+                          handleStatusChange(
+                            application._id,
+                            event.target.value
+                          )
+                        }
+                        aria-label={`Update status for ${application.company}`}
+                      >
+                        {STATUSES.map((status) => (
+                          <option key={status} value={status}>
+                            {status}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <button
+                      type="button"
+                      className="delete-btn"
+                      onClick={() =>
+                        handleDeleteApplication(application._id)
+                      }
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <footer className="applications-footer">
+          <span>CareerTrack</span>
+          <span>One step closer to your career goal.</span>
+        </footer>
+      </div>
+    </main>
   );
 }
 

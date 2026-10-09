@@ -16,7 +16,7 @@ function Login({ onRegister, onLogin }) {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            email,
+            email: email.trim().toLowerCase(),
             password,
           }),
         }
@@ -25,9 +25,15 @@ function Login({ onRegister, onLogin }) {
       const data = await response.json();
 
       if (!response.ok) {
-        alert(data.message);
+        alert(data.message || "Login failed");
         return;
       }
+
+      // Save JWT authentication token
+      localStorage.setItem(
+        "careerTrackToken",
+        data.token
+      );
 
       // Save logged-in user information
       localStorage.setItem(
@@ -42,7 +48,7 @@ function Login({ onRegister, onLogin }) {
 
       localStorage.setItem(
         "careerTrackUserEmail",
-        email
+        email.trim().toLowerCase()
       );
 
       alert("Login successful!");
@@ -57,13 +63,10 @@ function Login({ onRegister, onLogin }) {
   return (
     <div className="login-page">
       <div className="login-box">
-
         <h1>CareerTrack</h1>
-
         <h2>Student Login</h2>
 
         <form onSubmit={handleLogin}>
-
           <input
             type="email"
             placeholder="Enter Email"
@@ -83,17 +86,13 @@ function Login({ onRegister, onLogin }) {
           <button type="submit">
             Login
           </button>
-
         </form>
 
-        <p>
-          Don't have an account?
-        </p>
+        <p>Don't have an account?</p>
 
-        <button onClick={onRegister}>
+        <button type="button" onClick={onRegister}>
           Register
         </button>
-
       </div>
     </div>
   );

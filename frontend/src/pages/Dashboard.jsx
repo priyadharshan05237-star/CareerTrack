@@ -157,41 +157,41 @@ function Dashboard({
         // ======================================
 
         try {
+  const token = localStorage.getItem("careerTrackToken");
 
-          const response =
-            await fetch(
-              `http://127.0.0.1:5000/api/applications/${userId}`
-            );
-
-          if (response.ok) {
-
-            const data =
-              await response.json();
-
-            if (
-              Array.isArray(data)
-            ) {
-
-              setApplications(data);
-
-            } else {
-
-              setApplications([]);
-
-            }
-
-          }
-
-        } catch (error) {
-
-          console.error(
-            "Applications loading error:",
-            error
-          );
-
-          setApplications([]);
-
+  if (!token) {
+    console.error("Authentication token not found");
+    setApplications([]);
+  } else {
+    const response = await fetch(
+      `http://127.0.0.1:5000/api/applications/${userId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
         }
+      }
+    );
+
+    if (response.ok) {
+      const data = await response.json();
+
+      if (Array.isArray(data)) {
+        setApplications(data);
+      } else {
+        setApplications([]);
+      }
+    } else {
+      console.error(
+        "Failed to load applications:",
+        response.status
+      );
+      setApplications([]);
+    }
+  }
+} catch (error) {
+  console.error("Applications loading error:", error);
+  setApplications([]);
+}
 
 
         // ======================================
