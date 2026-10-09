@@ -4148,7 +4148,7 @@ useEffect(() => {
       }
 
       const response = await fetch(
-        `http://127.0.0.1:5000/api/preparation/progress/${userId}`
+        `https://careertrack-1rj8.onrender.com/api/preparation/progress/${userId}`
       );
 
       if (!response.ok) {
@@ -4295,7 +4295,7 @@ const handleSubmit = async () => {
     } else {
 
       const response = await fetch(
-        `http://127.0.0.1:5000/api/preparation/progress/${userId}`,
+        `https://careertrack-1rj8.onrender.com/api/preparation/progress/${userId}`,
         {
           method: "PUT",
 

@@ -1,8 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import "./Applications.css";
 
-const API_URL = "http://127.0.0.1:5000/api/applications";
-
+const API_URL = "https://careertrack-1rj8.onrender.com/api/applications";
 const STATUSES = [
   "Applied",
   "Shortlisted",

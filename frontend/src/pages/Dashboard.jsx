@@ -118,7 +118,7 @@ function Dashboard({
 
           const response =
             await fetch(
-              `http://127.0.0.1:5000/api/preparation/progress/${userId}`
+              `https://careertrack-1rj8.onrender.com/api/preparation/progress/${userId}`
             );
 
           if (response.ok) {
@@ -164,7 +164,7 @@ function Dashboard({
     setApplications([]);
   } else {
     const response = await fetch(
-      `http://127.0.0.1:5000/api/applications/${userId}`,
+      `https://careertrack-1rj8.onrender.com/api/applications/${userId}`,
       {
         headers: {
           Authorization: `Bearer ${token}`
@@ -202,7 +202,7 @@ function Dashboard({
 
           const response =
             await fetch(
-              `http://127.0.0.1:5000/api/student-profile/${userId}`
+            `https://careertrack-1rj8.onrender.com/api/profile/progress/${userId}`
             );
 
           if (response.ok) {

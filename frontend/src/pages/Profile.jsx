@@ -39,7 +39,7 @@ function Profile({ goDashboard }) {
     const loadProfile = async () => {
       try {
         const response = await fetch(
-          `http://127.0.0.1:5000/api/student-profile/${userId}`
+          `https://careertrack-1rj8.onrender.com/api/student-profile/${userId}`
         );
 
         const text = await response.text();
@@ -111,7 +111,7 @@ function Profile({ goDashboard }) {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:5000/api/student-profile/${userId}`,
+        `https://careertrack-1rj8.onrender.com/api/student-profile/${userId}`,
         {
           method: "PUT",
           headers: {
