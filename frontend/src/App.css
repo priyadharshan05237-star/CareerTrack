@@ -692,3 +692,18 @@ a {
   color: #2563eb;
   font-weight: 600;
 }
+/* Fix text visibility inside input fields */
+input,
+textarea,
+select {
+  color: #222222 !important;
+  background-color: #ffffff;
+  caret-color: #222222;
+}
+
+/* Placeholder text */
+input::placeholder,
+textarea::placeholder {
+  color: #757575;
+  opacity: 1;
+}
